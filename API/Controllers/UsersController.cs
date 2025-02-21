@@ -1,9 +1,8 @@
-﻿using System.Security.Claims;
-using API.DTOs;
+﻿using API.DTOs;
 using API.Entities;
 using API.Extensions;
+using API.Helper;
 using API.Interfaces;
-using API.Services;
 using AutoMapper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -14,9 +13,12 @@ public class UsersController(IUserRepository userRepository, IMapper mapper, IPh
 {
     [HttpGet]
 
-    public async Task<ActionResult<IEnumerable<MemberDto>>> GetUsers(){
+    public async Task<ActionResult<IEnumerable<MemberDto>>> GetUsers([FromQuery]UserParams userParams){
 
-        var users = await userRepository.GetMemberAsync();
+        userParams.CurrentUsername = User.GetUsername();
+        var users = await userRepository.GetMemberAsync(userParams);
+
+        Response.AddPaginationHeader(users);
 
         return Ok(users);
     }
@@ -63,6 +65,8 @@ public class UsersController(IUserRepository userRepository, IMapper mapper, IPh
             Url = result.SecureUrl.AbsoluteUri,
             PublicId = result.PublicId
         };
+
+        if (user.Photos.Count == 0) photo.IsMain = true;
 
         user.Photos.Add(photo);
 
